@@ -9,6 +9,7 @@
 import UIKit
 import Metal
 import MetalKit
+import GLKit
 
 let MaxBuffers = 3
 let ConstantBufferSize = 1024*1024
@@ -62,7 +63,6 @@ class GameViewController:UIViewController, MTKViewDelegate {
     var yDelta:[Float] = [ 0.001,  0.002, -0.001 ]
     
     override func viewDidLoad() {
-        
         super.viewDidLoad()
         
         device = MTLCreateSystemDefaultDevice()
