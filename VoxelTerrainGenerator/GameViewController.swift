@@ -62,6 +62,8 @@ class GameViewController:UIViewController, MTKViewDelegate {
     var xDelta:[Float] = [ 0.002, -0.001, 0.003 ]
     var yDelta:[Float] = [ 0.001,  0.002, -0.001 ]
     
+    var scheduler: Scheduler! = nil
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -76,12 +78,12 @@ class GameViewController:UIViewController, MTKViewDelegate {
         let view = self.view as! MTKView
         view.device = device
         view.delegate = self
+        view.preferredFramesPerSecond = 60
         
         loadAssets()
     }
     
     func loadAssets() {
-        
         // load any resources required for rendering
         let view = self.view as! MTKView
         commandQueue = device.newCommandQueue()
@@ -110,9 +112,12 @@ class GameViewController:UIViewController, MTKViewDelegate {
         let vertexColorSize = vertexData.count * sizeofValue(vertexColorData[0])
         vertexColorBuffer = device.newBufferWithBytes(vertexColorData, length: vertexColorSize, options: [])
         vertexColorBuffer.label = "colors"
+        
+        self.scheduler = Scheduler(seed: UInt32(NSDate().timeIntervalSinceReferenceDate))
     }
     
     func update() {
+        self.scheduler.update()
         
         // vData is pointer to the MTLBuffer's Float data contents
         let pData = vertexBuffer.contents()

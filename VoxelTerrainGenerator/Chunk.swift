@@ -35,12 +35,12 @@ class Chunk {
     private var blocks: [Block] = Array(count: 16*16*128, repeatedValue: .Air)
     
     func get(x: UInt32, y: UInt32, z: UInt32) -> Block {
-        assert(x < 0 || x >= 16 || y < 0 || y >= 16 || z < 0 || z >= 128, "Index out of bounds")
+        assert(x < 16 && y < 16 && z < 128, "Index out of bounds")
         return blocks[Int(x*16*16 + y*16 + z)]
     }
     
     func set(x: UInt32, y: UInt32, z: UInt32, block: Block) {
-        assert(x < 0 || x >= 16 || y < 0 || y >= 16 || z < 0 || z >= 128, "Index out of bounds")
+        assert(x < 16 && y < 16 && z < 128, "Index out of bounds")
         blocks[Int(x*16*16 + y*16 + z)] = block
     }
 }

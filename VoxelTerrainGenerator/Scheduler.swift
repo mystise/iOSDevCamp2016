@@ -19,88 +19,88 @@ class Scheduler {
     private var ungenerated_chunks: Set<ChunkPosition> = []
     private let seed: UInt32
     private var camera_pos: (Float32, Float32) = (0.0, 0.0) // (Y, Z), X = 0
-    private var time: Float64 = 0.0
     private let height_noise: Brownian
     private let dirt_noise: OpenSimplex
     
-    var camera_speed: Float32 = 0.0
+    var camera_speed: Float32 = 1.0
     
     init(seed: UInt32) {
         self.seed = seed
         self.height_noise = Brownian(seed: self.seed, octaves: 4, frequency: 1.0/150.0)
         self.dirt_noise = OpenSimplex(seed: self.seed)
+        
+        for x_pos in -RADIUS...RADIUS {
+            for y_pos in -RADIUS...RADIUS {
+                let chunk_pos = ChunkPosition(x: x_pos, y: y_pos)
+                if !self.chunks.keys.contains(chunk_pos) {
+                    self.ungenerated_chunks.insert(chunk_pos)
+                }
+            }
+        }
     }
     
-    func update(dt: Float64) {
-        self.time += dt
-        if self.time >= 1.0 { // If we're lagging behind, only do one tick
-            self.time = TIMESTEP
-        }
-        while self.time >= TIMESTEP {
-            self.time -= TIMESTEP
-            
-            let old_camera_pos = Int32(self.camera_pos.0) / 16
-            self.camera_pos.0 += self.camera_speed * Float32(TIMESTEP)
-            let new_camera_pos = Int32(self.camera_pos.0) / 16
-            if old_camera_pos != new_camera_pos {
-                var removed: Array<ChunkPosition> = []
-                for chunk_pos in self.chunks.keys {
-                    if chunk_pos.x < -RADIUS ||
-                        chunk_pos.x > RADIUS + 1 ||
-                        chunk_pos.y < new_camera_pos - RADIUS ||
-                        chunk_pos.y > new_camera_pos + RADIUS + 1 {
-                        removed.append(chunk_pos)
-                    }
-                }
-                
-                for chunk_pos in removed {
-                    self.chunks.removeValueForKey(chunk_pos)
-                    self.unpopulated_chunks.remove(chunk_pos)
-                    self.ungenerated_chunks.remove(chunk_pos)
-                    self.dirty_chunks.remove(chunk_pos)
-                    // TODO: Remove mesh as well
-                }
-                
-                for x_pos in -RADIUS...RADIUS {
-                    for y_pos in new_camera_pos - RADIUS...new_camera_pos + RADIUS {
-                        let chunk_pos = ChunkPosition(x: x_pos, y: y_pos)
-                        if !self.chunks.keys.contains(chunk_pos) {
-                            self.ungenerated_chunks.insert(chunk_pos)
-                        }
-                    }
+    func update() {
+        let old_camera_pos = Int32(self.camera_pos.0) / 16
+        self.camera_pos.0 += self.camera_speed * Float32(TIMESTEP)
+        let new_camera_pos = Int32(self.camera_pos.0) / 16
+        if old_camera_pos != new_camera_pos {
+            var removed: Array<ChunkPosition> = []
+            for chunk_pos in self.chunks.keys {
+                if chunk_pos.x < -RADIUS ||
+                    chunk_pos.x > RADIUS + 1 ||
+                    chunk_pos.y < new_camera_pos - RADIUS ||
+                    chunk_pos.y > new_camera_pos + RADIUS + 1 {
+                    removed.append(chunk_pos)
                 }
             }
             
-            // TODO: If fast enough, do more than one per tick
-            
-            if let chunk_pos = self.ungenerated_chunks.popFirst() {
-                self.chunks[chunk_pos] = self.generate_chunk(chunk_pos)
-            }
-            
-            var pop_chunk_pos: ChunkPosition? = nil
-            for chunk_pos in self.unpopulated_chunks {
-                if self.chunks.keys.contains(chunk_pos.north()) &&
-                    self.chunks.keys.contains(chunk_pos.north_east()) &&
-                    self.chunks.keys.contains(chunk_pos.east()) &&
-                    self.chunks.keys.contains(chunk_pos.south_east()) &&
-                    self.chunks.keys.contains(chunk_pos.south()) &&
-                    self.chunks.keys.contains(chunk_pos.south_west()) &&
-                    self.chunks.keys.contains(chunk_pos.west()) &&
-                    self.chunks.keys.contains(chunk_pos.north_west()) {
-                    pop_chunk_pos = chunk_pos
-                    break
-                }
-            }
-            
-            if let chunk_pos = pop_chunk_pos {
+            for chunk_pos in removed {
+                self.chunks.removeValueForKey(chunk_pos)
                 self.unpopulated_chunks.remove(chunk_pos)
-                self.populate_chunk(chunk_pos)
-                self.dirty_chunks.insert(chunk_pos)
+                self.ungenerated_chunks.remove(chunk_pos)
+                self.dirty_chunks.remove(chunk_pos)
+                // TODO: Remove mesh as well
             }
             
-            if let _ = self.dirty_chunks.popFirst() {
-                // TODO: Mesh chunk
+            for x_pos in -RADIUS...RADIUS {
+                for y_pos in new_camera_pos - RADIUS...new_camera_pos + RADIUS {
+                    let chunk_pos = ChunkPosition(x: x_pos, y: y_pos)
+                    if !self.chunks.keys.contains(chunk_pos) {
+                        self.ungenerated_chunks.insert(chunk_pos)
+                    }
+                }
             }
+        }
+        
+        // TODO: If fast enough, do more than one per tick
+        
+        if let chunk_pos = self.ungenerated_chunks.popFirst() {
+            self.chunks[chunk_pos] = self.generate_chunk(chunk_pos)
+        }
+        
+        var pop_chunk_pos: ChunkPosition? = nil
+        for chunk_pos in self.unpopulated_chunks {
+            if self.chunks.keys.contains(chunk_pos.north()) &&
+                self.chunks.keys.contains(chunk_pos.north_east()) &&
+                self.chunks.keys.contains(chunk_pos.east()) &&
+                self.chunks.keys.contains(chunk_pos.south_east()) &&
+                self.chunks.keys.contains(chunk_pos.south()) &&
+                self.chunks.keys.contains(chunk_pos.south_west()) &&
+                self.chunks.keys.contains(chunk_pos.west()) &&
+                self.chunks.keys.contains(chunk_pos.north_west()) {
+                pop_chunk_pos = chunk_pos
+                break
+            }
+        }
+        
+        if let chunk_pos = pop_chunk_pos {
+            self.unpopulated_chunks.remove(chunk_pos)
+            self.populate_chunk(chunk_pos)
+            self.dirty_chunks.insert(chunk_pos)
+        }
+        
+        if let _ = self.dirty_chunks.popFirst() {
+            // TODO: Mesh chunk
         }
     }
     
@@ -122,16 +122,20 @@ class Scheduler {
                 noise = self.dirt_noise.gen(Float64(xy_pos.0) / scale, Float64(xy_pos.1) / scale)
                 let dirt_height = Int32((noise + 1.0) / 2.0 * 8.0 - 1.0)
                 
-                for z in height - dirt_height..<height {
-                    output.set(UInt32(x), y: UInt32(y), z: UInt32(z), block: .Dirt)
+                if height - dirt_height < height {
+                    for z in height - dirt_height..<height {
+                        output.set(UInt32(x), y: UInt32(y), z: UInt32(z), block: .Dirt)
+                    }
                 }
                 
                 if dirt_height > 0 {
                     output.set(UInt32(x), y: UInt32(y), z: UInt32(height), block: .Grass)
                 }
                 
-                for z in height..<32 {
-                    output.set(UInt32(x), y: UInt32(y), z: UInt32(z), block: .Water)
+                if height < 32 {
+                    for z in height..<32 {
+                        output.set(UInt32(x), y: UInt32(y), z: UInt32(z), block: .Water)
+                    }
                 }
             }
         }

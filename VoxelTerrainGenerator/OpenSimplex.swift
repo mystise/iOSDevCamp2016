@@ -64,7 +64,7 @@ struct OpenSimplex {
     
     init(seed: UInt32) {
         srand(seed)
-        var perm: [UInt8] = (0...255).map { (x) -> UInt8 in x }
+        var perm: [UInt8] = (Int(0)...255).map { (x) -> UInt8 in UInt8(x) }
         for i in (1...255).reverse() {
             perm[i] = perm[Int(rand() % (i + 1))]
         }
