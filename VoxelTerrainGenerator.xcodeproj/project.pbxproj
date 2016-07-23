@@ -13,6 +13,7 @@
 		492D6E661D4304E60061A368 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 492D6E641D4304E60061A368 /* Main.storyboard */; };
 		492D6E681D4304E60061A368 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 492D6E671D4304E60061A368 /* Assets.xcassets */; };
 		492D6E6B1D4304E60061A368 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 492D6E691D4304E60061A368 /* LaunchScreen.storyboard */; };
+		492D6E731D4307B80061A368 /* Chunk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 492D6E721D4307B80061A368 /* Chunk.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		492D6E671D4304E60061A368 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		492D6E6A1D4304E60061A368 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		492D6E6C1D4304E60061A368 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		492D6E721D4307B80061A368 /* Chunk.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Chunk.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +60,7 @@
 			children = (
 				492D6E5E1D4304E60061A368 /* AppDelegate.swift */,
 				492D6E601D4304E60061A368 /* GameViewController.swift */,
+				492D6E721D4307B80061A368 /* Chunk.swift */,
 				492D6E621D4304E60061A368 /* Shaders.metal */,
 				492D6E641D4304E60061A368 /* Main.storyboard */,
 				492D6E671D4304E60061A368 /* Assets.xcassets */,
@@ -99,6 +102,7 @@
 				TargetAttributes = {
 					492D6E5A1D4304E60061A368 = {
 						CreatedOnToolsVersion = 7.3.1;
+						DevelopmentTeam = 8FW6CS9XSP;
 					};
 				};
 			};
@@ -141,6 +145,7 @@
 				492D6E631D4304E60061A368 /* Shaders.metal in Sources */,
 				492D6E611D4304E60061A368 /* GameViewController.swift in Sources */,
 				492D6E5F1D4304E60061A368 /* AppDelegate.swift in Sources */,
+				492D6E731D4307B80061A368 /* Chunk.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,10 +260,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = VoxelTerrainGenerator/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = mystise.games.VoxelTerrainGenerator;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -266,10 +274,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = VoxelTerrainGenerator/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = mystise.games.VoxelTerrainGenerator;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};
