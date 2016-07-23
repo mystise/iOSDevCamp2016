@@ -16,6 +16,43 @@
 
 import Foundation
 
+private let OFFSET: Float64 = sqrt(3.0)
+
+struct Brownian {
+    private let noise: OpenSimplex
+    private let octaves: UInt32
+    private let frequency: Float64
+    private let lacunarity: Float64
+    private let persistence: Float64
+    
+    init(seed: UInt32, octaves: UInt32 = 1, frequency: Float64 = 1.0, lacunarity: Float64 = 2.2, persistence: Float64 = 0.5) {
+        self.noise = OpenSimplex(seed: seed)
+        self.octaves = octaves
+        self.frequency = frequency
+        self.lacunarity = lacunarity
+        self.persistence = persistence
+    }
+    
+    func gen(x: Float64, _ y: Float64) -> Float64 {
+        var output = 0.0
+        
+        var offset = OFFSET
+        var frequency = self.frequency
+        var total_magnitude = 0.0
+        var magnitude = 1.0
+        for _ in 0..<self.octaves {
+            output += self.noise.gen(x * frequency + offset, y * frequency + offset) * magnitude
+            total_magnitude += magnitude
+            
+            frequency *= self.lacunarity
+            magnitude *= self.persistence
+            offset += OFFSET
+        }
+        
+        return output / total_magnitude
+    }
+}
+
 private let STRETCH: Float64 = (1 / sqrt(3.0) - 1) / 2
 private let SQUISH: Float64 = (sqrt(3.0) - 1) / 2
 private let NORM: Float64 = 1.0 / 14.0
@@ -28,14 +65,14 @@ struct OpenSimplex {
     init(seed: UInt32) {
         srand(seed)
         var perm: [UInt8] = (0...255).map { (x) -> UInt8 in x }
-        for i in 255...1 {
+        for i in (1...255).reverse() {
             perm[i] = perm[Int(rand() % (i + 1))]
         }
         
         self.perm = perm
     }
     
-    func gen(x: Float64, y: Float64) -> Float64 {
+    func gen(x: Float64, _ y: Float64) -> Float64 {
         let stretch_offset = (x + y) * STRETCH
         let xs = x + stretch_offset
         let ys = y + stretch_offset

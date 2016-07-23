@@ -64,9 +64,64 @@ struct Position {
 }
 
 struct BlockPosition {
-    private(set) var x: UInt32
-    private(set) var y: UInt32
-    private(set) var z: UInt32
+    var x: UInt32
+    var y: UInt32
+    var z: UInt32
+}
+
+struct WorldPosition {
+    let block_pos: BlockPosition
+    let chunk_pos: ChunkPosition
     
-    private(set) var chunk_pos: ChunkPosition
+    init(block_pos: BlockPosition, chunk_pos: ChunkPosition) {
+        self.block_pos = block_pos
+        self.chunk_pos = chunk_pos
+    }
+    
+    init(pos: Position) {
+        let x = WorldPosition.convert(pos.x, 16)
+        let y = WorldPosition.convert(pos.y, 16)
+        let z = WorldPosition.clamp(pos.z, 128)
+        
+        self.block_pos = BlockPosition(x: x.0, y: y.0, z: z)
+        self.chunk_pos = ChunkPosition(x: x.1, y: y.1)
+    }
+    
+    private static func convert(val: Int32, _ divisor: Int32) -> (UInt32, Int32) {
+        var mod = val
+        var div = Int32(0)
+        while mod < 0 {
+            mod += divisor
+            div -= 1
+        }
+        while mod >= divisor {
+            mod -= divisor
+            div += 1
+        }
+        return (UInt32(mod), div)
+    }
+    
+    private static func clamp(val: Int32, _ max: Int32) -> UInt32 {
+        if val < 0 {
+            return 0
+        }
+        if val >= max {
+            return UInt32(max - 1)
+        }
+        return UInt32(val)
+    }
+    
+    func offset(x: Int32, y: Int32, z: Int32) -> WorldPosition {
+        let block_x = Int32(self.block_pos.x) + x
+        let block_y = Int32(self.block_pos.y) + y
+        let block_z = Int32(self.block_pos.z) + z
+        let chunk_x = self.chunk_pos.x
+        let chunk_y = self.chunk_pos.y
+        
+        let x = WorldPosition.convert(block_x, 16)
+        let y = WorldPosition.convert(block_y, 16)
+        let z = WorldPosition.clamp(block_z, 128)
+        
+        return WorldPosition(block_pos: BlockPosition(x: x.0, y: y.0, z: z), chunk_pos: ChunkPosition(x: chunk_x + x.1, y: chunk_y + y.1))
+    }
 }

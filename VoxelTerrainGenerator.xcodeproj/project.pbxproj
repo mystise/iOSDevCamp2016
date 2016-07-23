@@ -16,7 +16,6 @@
 		492D6E731D4307B80061A368 /* Chunk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 492D6E721D4307B80061A368 /* Chunk.swift */; };
 		492D6E751D4311020061A368 /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 492D6E741D4311020061A368 /* Scheduler.swift */; };
 		492D6E771D4313760061A368 /* Position.swift in Sources */ = {isa = PBXBuildFile; fileRef = 492D6E761D4313760061A368 /* Position.swift */; };
-		497DC5441D43DC3A001F17EB /* Noise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 497DC5431D43DC3A001F17EB /* Noise.swift */; };
 		497DC5461D43EC12001F17EB /* OpenSimplex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 497DC5451D43EC12001F17EB /* OpenSimplex.swift */; };
 /* End PBXBuildFile section */
 
@@ -32,7 +31,6 @@
 		492D6E721D4307B80061A368 /* Chunk.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Chunk.swift; sourceTree = "<group>"; };
 		492D6E741D4311020061A368 /* Scheduler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Scheduler.swift; sourceTree = "<group>"; };
 		492D6E761D4313760061A368 /* Position.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Position.swift; sourceTree = "<group>"; };
-		497DC5431D43DC3A001F17EB /* Noise.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Noise.swift; sourceTree = "<group>"; };
 		497DC5451D43EC12001F17EB /* OpenSimplex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenSimplex.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -71,7 +69,6 @@
 				492D6E721D4307B80061A368 /* Chunk.swift */,
 				492D6E741D4311020061A368 /* Scheduler.swift */,
 				492D6E761D4313760061A368 /* Position.swift */,
-				497DC5431D43DC3A001F17EB /* Noise.swift */,
 				497DC5451D43EC12001F17EB /* OpenSimplex.swift */,
 				492D6E621D4304E60061A368 /* Shaders.metal */,
 				492D6E641D4304E60061A368 /* Main.storyboard */,
@@ -156,7 +153,6 @@
 			files = (
 				497DC5461D43EC12001F17EB /* OpenSimplex.swift in Sources */,
 				492D6E631D4304E60061A368 /* Shaders.metal in Sources */,
-				497DC5441D43DC3A001F17EB /* Noise.swift in Sources */,
 				492D6E611D4304E60061A368 /* GameViewController.swift in Sources */,
 				492D6E771D4313760061A368 /* Position.swift in Sources */,
 				492D6E5F1D4304E60061A368 /* AppDelegate.swift in Sources */,
