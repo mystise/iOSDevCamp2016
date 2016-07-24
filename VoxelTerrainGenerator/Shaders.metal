@@ -37,5 +37,5 @@ vertex VertexOut passThroughVertex(uint vid [[ vertex_id ]],
 
 fragment half4 passThroughFragment(VertexOut inFrag [[stage_in]])
 {
-    return half4(inFrag.color);
+    return pow(half4(inFrag.color), 1.0/2.2);
 };

@@ -49,7 +49,7 @@ class Scheduler {
         }
         
         self.view = view
-        self.view.clearColor = MTLClearColorMake(0.0, 0.2, 0.8, 1.0)
+        self.view.clearColor = MTLClearColorMake(0.0, pow(0.2, 1.0/2.2), pow(0.8, 1.0/2.2), 1.0)
         self.device = self.view.device
         self.commandQueue = self.device.newCommandQueue()
         self.commandQueue.label = "Main Queue"
@@ -151,7 +151,9 @@ class Scheduler {
         }
         
         if let chunk_pos = self.dirty_chunks.popFirst() {
-            self.mesh_chunk(chunk_pos)
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0)) {
+                self.mesh_chunk(chunk_pos)
+            }
         }
         
         let projection = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(90.0), Float(self.view.drawableSize.width / self.view.drawableSize.height), 0.01, 1000.0)
@@ -166,7 +168,8 @@ class Scheduler {
         if let renderPassDescriptor = self.view.currentRenderPassDescriptor, currentDrawable = self.view.currentDrawable {
             let renderEncoder = commandBuffer.renderCommandEncoderWithDescriptor(renderPassDescriptor)
             renderEncoder.label = "Render encoder"
-            renderEncoder.setRenderPipelineState(pipelineState)
+            
+            renderEncoder.setRenderPipelineState(self.pipelineState)
             renderEncoder.setFrontFacingWinding(.CounterClockwise)
             renderEncoder.setCullMode(.Back)
             renderEncoder.setDepthStencilState(self.depthStencilState)
@@ -178,7 +181,7 @@ class Scheduler {
                 renderEncoder.setVertexBuffer(self.mvpBuffer, offset: 0, atIndex: 1)
                 renderEncoder.setVertexBuffer(chunk_offset, offset: 0, atIndex: 2)
                 renderEncoder.drawIndexedPrimitives(.Triangle, indexCount: index_count, indexType: .UInt32, indexBuffer: indices, indexBufferOffset: 0)
-                
+                    
                 renderEncoder.popDebugGroup()
             }
             
@@ -241,7 +244,7 @@ class Scheduler {
             let block_y = UInt32(rand() % 16)
             
             var zpos: UInt32 = 0
-            for z in (UInt32(0)...127).reverse() {
+            for z in (UInt32(0)..<128).reverse() {
                 if chunk.get(block_x, block_y, z) != .Air {
                     zpos = z
                     break
@@ -536,7 +539,9 @@ class Scheduler {
         let coData = UnsafeMutablePointer<Float>(chunk_offset_buffer.contents())
         coData.initializeFrom([Float(chunk_pos.x), Float(chunk_pos.y)])
         
-        self.meshes[chunk_pos] = (vertex_buffer, index_buffer, indices.count, chunk_offset_buffer)
+        dispatch_async(dispatch_get_main_queue()) {
+            self.meshes[chunk_pos] = (vertex_buffer, index_buffer, indices.count, chunk_offset_buffer)
+        }
     }
     
     /*
