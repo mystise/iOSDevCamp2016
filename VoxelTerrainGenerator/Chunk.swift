@@ -36,11 +36,11 @@ class Chunk {
     
     func get(x: UInt32, _ y: UInt32, _ z: UInt32) -> Block {
         assert(x < 16 && y < 16 && z < 128, "Index out of bounds")
-        return blocks[Int(x*16*16 + y*16 + z)]
+        return blocks[Int(x*16*128 + y*128 + z)]
     }
     
     func set(x: UInt32, _ y: UInt32, _ z: UInt32, block: Block) {
         assert(x < 16 && y < 16 && z < 128, "Index out of bounds")
-        blocks[Int(x*16*16 + y*16 + z)] = block
+        blocks[Int(x*16*128 + y*128 + z)] = block
     }
 }

@@ -12,7 +12,7 @@ import MetalKit
 import GLKit
 
 let TIMESTEP: Float64 = 1.0/60.0
-let RADIUS: Int32 = 10
+let RADIUS: Int32 = 3
 
 class Scheduler {
     private var meshes: Dictionary<ChunkPosition, (MTLBuffer, MTLBuffer, Int, MTLBuffer)> = [:] // (vertices, indices, index count, chunk offset)
@@ -21,7 +21,7 @@ class Scheduler {
     private var unpopulated_chunks: Set<ChunkPosition> = []
     private var ungenerated_chunks: Set<ChunkPosition> = []
     private let seed: UInt32
-    private var camera_pos: (Float32, Float32) = (0.0, 0.0) // (Y, Z), X = 0
+    private var camera_pos: (Float32, Float32) = (0.0, 128.0) // (Y, Z), X = 0
     private let height_noise: Brownian
     private let dirt_noise: OpenSimplex
     
@@ -30,8 +30,9 @@ class Scheduler {
     private var commandQueue: MTLCommandQueue! = nil
     private var pipelineState: MTLRenderPipelineState! = nil
     private var mvpBuffer: MTLBuffer! = nil
+    private var depthStencilState: MTLDepthStencilState! = nil
     
-    var camera_speed: Float32 = 1.0
+    var camera_speed: Float32 = 2.0
     
     init(seed: UInt32, view: MTKView) {
         self.seed = seed
@@ -39,7 +40,7 @@ class Scheduler {
         self.dirt_noise = OpenSimplex(seed: self.seed)
         
         for x_pos in -RADIUS...RADIUS {
-            for y_pos in -RADIUS...RADIUS {
+            for y_pos in -1...RADIUS {
                 let chunk_pos = ChunkPosition(x: x_pos, y: y_pos)
                 if !self.chunks.keys.contains(chunk_pos) {
                     self.ungenerated_chunks.insert(chunk_pos)
@@ -64,24 +65,30 @@ class Scheduler {
         pipelineStateDescriptor.sampleCount = self.view.sampleCount
         
         do {
-            try self.pipelineState = device.newRenderPipelineStateWithDescriptor(pipelineStateDescriptor)
+            try self.pipelineState = self.device.newRenderPipelineStateWithDescriptor(pipelineStateDescriptor)
         } catch let error {
             assert(false, "Failed to create pipeline state, error \(error)")
         }
         
+        let depthStencilStateDescriptor = MTLDepthStencilDescriptor()
+        depthStencilStateDescriptor.depthCompareFunction = .Less
+        depthStencilStateDescriptor.depthWriteEnabled = true
+        self.depthStencilState = self.device.newDepthStencilStateWithDescriptor(depthStencilStateDescriptor)
+        
         self.mvpBuffer = self.device.newBufferWithLength(sizeof(GLKMatrix4), options: .CPUCacheModeWriteCombined)
+        self.mvpBuffer.label = "Matrix"
     }
     
     func update() {
-        let old_camera_pos = Int32(self.camera_pos.0) / 16
+        let old_camera_pos = Int32(floor(self.camera_pos.0)) / 16
         self.camera_pos.0 += self.camera_speed * Float32(TIMESTEP)
-        let new_camera_pos = Int32(self.camera_pos.0) / 16
+        let new_camera_pos = Int32(floor(self.camera_pos.0)) / 16
         if old_camera_pos != new_camera_pos {
             var removed: Array<ChunkPosition> = []
             for chunk_pos in self.chunks.keys {
                 if chunk_pos.x < -RADIUS ||
                     chunk_pos.x > RADIUS + 1 ||
-                    chunk_pos.y < new_camera_pos - RADIUS ||
+                    chunk_pos.y < new_camera_pos - 1 ||
                     chunk_pos.y > new_camera_pos + RADIUS + 1 {
                     removed.append(chunk_pos)
                 }
@@ -96,7 +103,7 @@ class Scheduler {
             }
             
             for x_pos in -RADIUS...RADIUS {
-                for y_pos in new_camera_pos - RADIUS...new_camera_pos + RADIUS {
+                for y_pos in new_camera_pos - 1...new_camera_pos + RADIUS {
                     let chunk_pos = ChunkPosition(x: x_pos, y: y_pos)
                     if !self.chunks.keys.contains(chunk_pos) {
                         self.ungenerated_chunks.insert(chunk_pos)
@@ -105,7 +112,19 @@ class Scheduler {
             }
         }
         
-        // TODO: If fast enough, do more than one per tick
+        {
+            let chunk_pos = ChunkPosition(x: 0, y: new_camera_pos)
+            if let chunk = self.chunks[chunk_pos] {
+                let y_pos = UInt32(floor(self.camera_pos.0)) & 0xF
+                for z in (UInt32(0)..<128).reverse() {
+                    if chunk.get(0, y_pos, z) != .Air {
+                        self.camera_pos.1 = Float32(z) + 4.0
+                        break
+                    }
+                }
+            }
+        }()
+        
         
         if let chunk_pos = self.ungenerated_chunks.popFirst() {
             self.generate_chunk(chunk_pos)
@@ -135,9 +154,9 @@ class Scheduler {
             self.mesh_chunk(chunk_pos)
         }
         
-        let projection = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(60.0), Float(self.view.frame.width / self.view.frame.height), 0.1, 1000.0)
-        let modelView = GLKMatrix4MakeLookAt(0.0, camera_pos.0, camera_pos.1, 0.0, camera_pos.0 + 1.0, camera_pos.1, 0.0, 0.0, 1.0)
-        let mvp = [GLKMatrix4Multiply(modelView, projection)]
+        let projection = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(90.0), Float(self.view.drawableSize.width / self.view.drawableSize.height), 0.01, 1000.0)
+        let modelView = GLKMatrix4MakeLookAt(0.5, camera_pos.0, camera_pos.1, 0.5, camera_pos.0 + 1.0, camera_pos.1, 0.0, 0.0, 1.0)
+        let mvp = [GLKMatrix4Multiply(projection, modelView)]
         let vData = UnsafeMutablePointer<GLKMatrix4>(self.mvpBuffer.contents())
         vData.initializeFrom(mvp)
         
@@ -147,11 +166,14 @@ class Scheduler {
         if let renderPassDescriptor = self.view.currentRenderPassDescriptor, currentDrawable = self.view.currentDrawable {
             let renderEncoder = commandBuffer.renderCommandEncoderWithDescriptor(renderPassDescriptor)
             renderEncoder.label = "Render encoder"
+            renderEncoder.setRenderPipelineState(pipelineState)
+            renderEncoder.setFrontFacingWinding(.CounterClockwise)
+            renderEncoder.setCullMode(.Back)
+            renderEncoder.setDepthStencilState(self.depthStencilState)
             
             for (chunk_pos, (vertices, indices, index_count, chunk_offset)) in self.meshes {
                 renderEncoder.pushDebugGroup("chunk \(chunk_pos)")
                 
-                renderEncoder.setRenderPipelineState(pipelineState)
                 renderEncoder.setVertexBuffer(vertices, offset: 0, atIndex: 0)
                 renderEncoder.setVertexBuffer(self.mvpBuffer, offset: 0, atIndex: 1)
                 renderEncoder.setVertexBuffer(chunk_offset, offset: 0, atIndex: 2)
@@ -204,12 +226,15 @@ class Scheduler {
                 }
             }
         }
+        
+        self.unpopulated_chunks.insert(chunk_pos)
     }
     
     func populate_chunk(chunk_pos: ChunkPosition) {
         let chunk = self.chunks[chunk_pos]!
+        srand((UInt32(bitPattern: chunk_pos.x) &* 0x0CFF235B) &+ (UInt32(bitPattern: chunk_pos.y) &* 0x4F72AC03) &+ seed)
         
-        srand((UInt32(chunk_pos.x) &* 0x0CFF235B) &+ (UInt32(chunk_pos.y) &* 0x4F72AC03) &+ seed)
+        self.dirty_chunks.insert(chunk_pos)
         
         for _ in 0..<rand() % 12 {
             let block_x = UInt32(rand() % 16)
@@ -233,13 +258,13 @@ class Scheduler {
                 chunk.set(block_x, block_y, z, block: .Log)
             }
             
-            self.dirty_chunks.insert(chunk_pos)
-            
             let check_set_leaf = { (pos: WorldPosition) in
                 let chunk = self.chunks[pos.chunk_pos]!
                 if chunk.get(pos.block_pos.x, pos.block_pos.y, pos.block_pos.z) == .Air {
                     chunk.set(pos.block_pos.x, pos.block_pos.y, pos.block_pos.z, block: .Leaf)
-                    self.dirty_chunks.insert(pos.chunk_pos)
+                    if !self.unpopulated_chunks.contains(pos.chunk_pos) {
+                        self.dirty_chunks.insert(pos.chunk_pos)
+                    }
                 }
             }
             
@@ -497,12 +522,16 @@ class Scheduler {
         let vertex_buffer = self.device.newBufferWithLength(vertices.count * sizeof(Vertex), options: .CPUCacheModeWriteCombined)
         let index_buffer = self.device.newBufferWithLength(indices.count * sizeof(UInt32), options: .CPUCacheModeWriteCombined)
         
+        vertex_buffer.label = "Vertices"
+        index_buffer.label = "Indices"
+        
         let vData = UnsafeMutablePointer<Vertex>(vertex_buffer.contents())
         vData.initializeFrom(vertices)
         let iData = UnsafeMutablePointer<UInt32>(index_buffer.contents())
         iData.initializeFrom(indices)
         
         let chunk_offset_buffer = self.device.newBufferWithLength(2 * sizeof(Float), options: .CPUCacheModeWriteCombined)
+        chunk_offset_buffer.label = "Chunk Offset"
         
         let coData = UnsafeMutablePointer<Float>(chunk_offset_buffer.contents())
         coData.initializeFrom([Float(chunk_pos.x), Float(chunk_pos.y)])

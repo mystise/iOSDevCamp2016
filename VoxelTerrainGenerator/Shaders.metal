@@ -12,8 +12,8 @@ using namespace metal;
 
 struct VertexIn
 {
-    packed_uchar4 pos;
-    packed_uchar4 color;
+    uchar4 pos;
+    uchar4 color;
 };
 
 struct VertexOut
@@ -28,9 +28,9 @@ vertex VertexOut passThroughVertex(uint vid [[ vertex_id ]],
                                    constant float2& chunk_offset [[ buffer(2) ]])
 {
     VertexOut outVertex;
-    
-    outVertex.position = mvp * (float4(vert_in[vid].pos[0], vert_in[vid].pos[1], vert_in[vid].pos[2], 1.0) + float4(chunk_offset * 16, 0.0, 0.0));
-    outVertex.color = float4(vert_in[vid].color[0], vert_in[vid].color[1], vert_in[vid].color[2], vert_in[vid].color[3]) / float(0xFF) * float(vert_in[vid].pos[3]) / float(0xFF);
+    uchar4 pos = vert_in[vid].pos;
+    outVertex.position = mvp * (float4(pos.x, pos.y, pos.z, 1.0) + float4(chunk_offset * 16, 0.0, 0.0));
+    outVertex.color = float4(vert_in[vid].color) / float(0xFF) * float(pos.w) / float(0xFF);
     
     return outVertex;
 };
